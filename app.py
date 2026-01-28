@@ -475,21 +475,116 @@ QUESTIONS = [
 # Streamlit App
 # ==========================
 st.set_page_config(
-    page_title="SQL Assessment", 
+    page_title="SQL Assessment - UE Platform", 
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# Custom CSS to make the layout more condensed
+# Custom CSS with UE branding (Purple theme)
 st.markdown("""
     <style>
-        /* Reduce margins and padding */
+        /* UE Color Scheme */
+        :root {
+            --ue-purple: #6B21A8;
+            --ue-light-purple: #9D4EDD;
+            --ue-dark-purple: #4C0A7A;
+        }
+        
+        /* Main container */
         .block-container {
             padding-top: 1rem;
             padding-bottom: 0rem;
             padding-left: 2rem;
             padding-right: 2rem;
             max-width: 100%;
+            background: linear-gradient(135deg, #f8f9fa 0%, #f0e6ff 100%);
+        }
+        
+        /* Header styling */
+        h1 {
+            color: #6B21A8;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(107, 33, 168, 0.1);
+        }
+        
+        h2, h3 {
+            color: #6B21A8;
+            font-weight: 600;
+        }
+        
+        /* Buttons */
+        .stButton > button {
+            background-color: #6B21A8;
+            color: white;
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .stButton > button:hover {
+            background-color: #9D4EDD;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 33, 168, 0.3);
+        }
+        
+        /* Progress bar */
+        .stProgress > div > div > div {
+            background-color: #6B21A8;
+        }
+        
+        /* Text input and text area */
+        .stTextInput > div > div > input,
+        .stTextArea > div > div > textarea {
+            border: 2px solid #D8B4FE;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .stTextInput > div > div > input:focus,
+        .stTextArea > div > div > textarea:focus {
+            border-color: #6B21A8;
+            box-shadow: 0 0 8px rgba(107, 33, 168, 0.2);
+        }
+        
+        /* Metrics */
+        .stMetric {
+            background-color: rgba(107, 33, 168, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #6B21A8;
+        }
+        
+        /* Expander */
+        .streamlit-expanderContent {
+            background-color: rgba(157, 78, 221, 0.05);
+            border-radius: 8px;
+            border: 1px solid #D8B4FE;
+        }
+        
+        /* Success/Error messages */
+        .stSuccess {
+            background-color: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22C55E;
+        }
+        
+        .stError {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #EF4444;
+        }
+        
+        .stWarning {
+            background-color: rgba(251, 146, 60, 0.1);
+            border-left: 4px solid #FB923C;
+        }
+        
+        /* Dataframe */
+        .stDataFrame {
+            border: 1px solid #D8B4FE;
+            border-radius: 8px;
         }
         
         /* Reduce spacing between elements */
@@ -500,6 +595,7 @@ st.markdown("""
         /* Make text area more compact */
         .stTextArea textarea {
             font-size: 13px;
+            font-family: 'Courier New', monospace;
         }
         
         /* Reduce header spacing */
@@ -524,8 +620,45 @@ st.markdown("""
             background-color: transparent;
             padding: 0.5rem;
         }
+        
+        /* Sidebar styling */
+        [data-testid="stSidebar"] {
+            background-color: #f8f9fa;
+            border-right: 2px solid #D8B4FE;
+        }
+        
+        /* Logo container */
+        .logo-container {
+            text-align: center;
+            padding: 1rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #D8B4FE;
+        }
+        
+        .logo-text {
+            color: #6B21A8;
+            font-weight: 700;
+            font-size: 24px;
+            margin-top: 0.5rem;
+        }
     </style>
 """, unsafe_allow_html=True)
+
+# ==========================
+# UE Branding Header
+# ==========================
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    # Display logo
+    try:
+        st.image("We_logo.svg695283768.png", width=100)
+    except:
+        st.markdown("🔷 **UE**")
+    
+    st.markdown("<h2 style='text-align: center; color: #6B21A8;'>SQL Mastery Training Program</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #757575; font-size: 14px;'>Employee Job Training - SQL Skills Certification</p>", unsafe_allow_html=True)
+
+st.markdown("---")
 
 # Initialize session state
 if "current_q" not in st.session_state:
@@ -548,21 +681,20 @@ if "admin_authenticated" not in st.session_state:
 # ==========================
 # Create a sidebar for admin access
 with st.sidebar:
-    st.markdown("---")
-    st.subheader("?? Admin Access")
+    st.subheader("🔐 Admin Access")
     
     if not st.session_state.admin_authenticated:
         admin_password = st.text_input("Enter Admin Password:", type="password", key="admin_password_sidebar")
-        if st.button("Login as Admin", key="admin_login_btn"):
+        if st.button("🔓 Login as Admin", key="admin_login_btn", use_container_width=True):
             if admin_password == "admin123":  # Change this to a secure password
                 st.session_state.admin_authenticated = True
-                st.success("? Admin access granted!")
+                st.success("✅ Admin access granted!")
                 st.rerun()
             else:
-                st.error("? Incorrect password.")
+                st.error("❌ Incorrect password.")
     else:
-        st.success("? Admin Mode Active")
-        if st.button("Logout Admin", key="admin_logout_btn"):
+        st.success("✅ Admin Mode Active")
+        if st.button("🔒 Logout Admin", key="admin_logout_btn", use_container_width=True):
             st.session_state.admin_authenticated = False
             st.rerun()
 
@@ -570,15 +702,19 @@ with st.sidebar:
 if st.session_state.admin_authenticated:
     st.set_page_config(page_title="SQL Assessment - Admin Mode", layout="wide")
 
-st.title("??? SQL Assessment ")
+# Update title with styling
+if st.session_state.admin_authenticated:
+    st.markdown("<h1 style='color: #EF4444; text-align: center;'>🔴 ADMIN MODE - Training Management</h1>", unsafe_allow_html=True)
+else:
+    st.markdown("")  # Empty line for spacing
 
 # ==========================
 # Admin Dashboard Section (Always Available to Authenticated Admins)
 # ==========================
 if st.session_state.admin_authenticated:
-    st.warning("You are in ADMIN MODE - Viewing all student submissions")
+    st.warning("⚠️ You are in ADMIN MODE - Viewing all employee training submissions")
     st.divider()
-    st.subheader("?? Admin Dashboard - Student Submissions Report")
+    st.markdown("<h2 style='color: #6B21A8; text-align: center;'>📊 Employee Training Assessment Dashboard</h2>", unsafe_allow_html=True)
     
     # Create submissions folder if it doesn't exist
     if not os.path.exists("submissions"):
@@ -588,7 +724,7 @@ if st.session_state.admin_authenticated:
     submission_files = [f for f in os.listdir("submissions") if f.endswith('.csv')]
     
     if submission_files:
-        st.info(f"Total submissions: {len(submission_files)}")
+        st.info(f"✅ Total employee submissions: {len(submission_files)}")
         
         # Load all submissions
         all_submissions = []
@@ -604,18 +740,18 @@ if st.session_state.admin_authenticated:
             combined_df = pd.concat(all_submissions, ignore_index=True)
             
             # Display submissions table
-            st.subheader("All Student Submissions")
+            st.subheader("All Employee Submissions")
             st.dataframe(combined_df, use_container_width=True, hide_index=True)
             
             # Export options
-            st.subheader("?? Export Options")
+            st.subheader(" Export Options")
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 # Export as CSV
                 csv_data = combined_df.to_csv(index=False)
                 st.download_button(
-                    label="?? Download as CSV",
+                    label=" Download as CSV",
                     data=csv_data,
                     file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
@@ -630,7 +766,7 @@ if st.session_state.admin_authenticated:
                         combined_df.to_excel(writer, index=False, sheet_name='Submissions')
                     excel_buffer.seek(0)
                     st.download_button(
-                        label="?? Download as Excel",
+                        label=" Download as Excel",
                         data=excel_buffer.getvalue(),
                         file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -642,7 +778,7 @@ if st.session_state.admin_authenticated:
                 st.metric("Total Users", len(combined_df))
             
             # Summary statistics
-            st.subheader("?? Summary Statistics")
+            st.subheader(" Summary Statistics")
             stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
             
             with stats_col1:
@@ -675,7 +811,7 @@ if st.session_state.admin_authenticated:
                     st.divider()
         
     else:
-        st.info("?? No submissions yet. Students can complete the assessment to generate reports.")
+        st.info(" No submissions yet. Employees can complete the assessment to generate reports.")
     
     # Stop here - don't show student assessment
     st.stop()
@@ -683,15 +819,20 @@ if st.session_state.admin_authenticated:
 # ==========================
 # Student Assessment Section (Only if not in Admin Mode)
 # ==========================
+st.markdown("<h2 style='color: #6B21A8; text-align: center;'>👨‍💼 Employee SQL Training Assessment</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #757575;'>Complete 34 comprehensive SQL proficiency questions</p>", unsafe_allow_html=True)
+st.divider()
+
+st.markdown("**👤 Employee Information** (Required)")
 col_name, col_email = st.columns(2)
 with col_name:
-    student_name = st.text_input("Your Name", key="student_name", placeholder="Enter your full name")
+    student_name = st.text_input("Your Full Name", key="student_name", placeholder="Enter your full name")
 with col_email:
-    student_email = st.text_input("Your Email", key="student_email", placeholder="Enter your email address")
+    student_email = st.text_input("Company Email", key="student_email", placeholder="Enter your company email")
 
 # Validate mandatory fields
 if not student_name or not student_email:
-    st.warning("?? Please enter both your name and email to begin the assessment.")
+    st.warning(" Please enter both your name and email to begin the assessment.")
     st.stop()
 
 # Progress bar
@@ -703,7 +844,7 @@ q = QUESTIONS[st.session_state.current_q]
 st.markdown(f"**Question:** {q['question']}")
 
 # Display description and table information
-with st.expander("?? Question Details & Schema"):
+with st.expander(" Question Details & Schema"):
     st.markdown(f"**Description:** {q['description']}")
     st.markdown("**Tables Involved:**")
     for table_name, table_data in q['table_info'].items():
@@ -811,15 +952,23 @@ if st.session_state.show_feedback:
 if (st.session_state.current_q >= len(QUESTIONS) or 
     (len(st.session_state.answers) >= len(QUESTIONS) and st.session_state.current_q == len(QUESTIONS) - 1)):
     
-    st.success("?? You have completed all questions!")
+    st.success(" You have completed all questions!")
     
     # Show summary
-    st.subheader("?? Your Results Summary")
+    st.subheader("📈 Your Training Assessment Results")
     total = len(st.session_state.answers)
     correct_count = sum(a["is_correct"] for a in st.session_state.answers)
     score_percentage = (correct_count / total) * 100
     
-    st.metric("Score", f"{correct_count}/{total} ({score_percentage:.1f}%)")
+    # Display score with color coding
+    if score_percentage >= 80:
+        st.success(f"🎖️ **PASSED** - Score: {correct_count}/{total} ({score_percentage:.1f}%)")
+    elif score_percentage >= 60:
+        st.warning(f"⚠️ **NEEDS IMPROVEMENT** - Score: {correct_count}/{total} ({score_percentage:.1f}%)")
+    else:
+        st.error(f"❌ **FAILED** - Score: {correct_count}/{total} ({score_percentage:.1f}%)")
+    
+    st.metric("Your Score", f"{correct_count}/{total} ({score_percentage:.1f}%)")
     
     # Save submission to CSV
     if student_name and student_email:
@@ -871,112 +1020,15 @@ if (st.session_state.current_q >= len(QUESTIONS) or
         st.session_state.show_feedback = False
         st.session_state.user_sql_input = ""
         st.rerun()
-
-
-# ==========================
-# Admin Dashboard Section (Always Available via Sidebar)
-# ==========================
-if st.session_state.admin_authenticated:
-    st.warning("⚠️ You are in ADMIN MODE - Viewing all student submissions")
+    
+    # ==========================
+    # Footer with UE Branding (Only on Results)
+    # ==========================
     st.divider()
-    st.subheader("📊 Admin Dashboard - Student Submissions Report")
-    
-    # Create submissions folder if it doesn't exist
-    if not os.path.exists("submissions"):
-        os.makedirs("submissions")
-    
-    # Read all submission files
-    submission_files = [f for f in os.listdir("submissions") if f.endswith('.csv')]
-    
-    if submission_files:
-        st.info(f"✅ Total submissions found: {len(submission_files)}")
-        
-        # Load all submissions
-        all_submissions = []
-        for file in submission_files:
-            try:
-                df = pd.read_csv(f"submissions/{file}")
-                all_submissions.append(df)
-            except Exception as e:
-                st.warning(f"Error reading {file}: {e}")
-        
-        if all_submissions:
-            # Combine all submissions
-            combined_df = pd.concat(all_submissions, ignore_index=True)
-            
-            # Display submissions table
-            st.subheader("📋 All Student Submissions")
-            st.dataframe(combined_df, use_container_width=True, hide_index=True)
-            
-            # Export options
-            st.subheader("📥 Export Options")
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                # Export as CSV
-                csv_data = combined_df.to_csv(index=False)
-                st.download_button(
-                    label="📥 Download as CSV",
-                    data=csv_data,
-                    file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv"
-                )
-            
-            with col2:
-                # Export as Excel
-                try:
-                    import openpyxl
-                    excel_buffer = io.BytesIO()
-                    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                        combined_df.to_excel(writer, index=False, sheet_name='Submissions')
-                    excel_buffer.seek(0)
-                    st.download_button(
-                        label="📥 Download as Excel",
-                        data=excel_buffer.getvalue(),
-                        file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-                except ImportError:
-                    st.info("⚠️ Install openpyxl: pip install openpyxl")
-            
-            with col3:
-                st.metric("Total Users", len(combined_df))
-            
-            # Summary statistics
-            st.subheader("📈 Summary Statistics")
-            stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
-            
-            with stats_col1:
-                st.metric("Total Submissions", len(combined_df))
-            
-            with stats_col2:
-                if 'Correct Answers' in combined_df.columns:
-                    avg_correct = combined_df['Correct Answers'].mean()
-                    st.metric("Avg Correct", f"{avg_correct:.1f}")
-            
-            with stats_col3:
-                if 'Score (%)' in combined_df.columns:
-                    avg_score = combined_df['Score (%)'].mean()
-                    st.metric("Avg Score", f"{avg_score:.1f}%")
-            
-            with stats_col4:
-                st.metric("Unique Users", combined_df['Name'].nunique() if 'Name' in combined_df.columns else 'N/A')
-            
-            # Detailed view option
-            with st.expander("👁️ View Detailed Submissions"):
-                for idx, row in combined_df.iterrows():
-                    st.markdown(f"### {row['Name']} ({row['Email']})")
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Score", f"{row['Score (%)']}%")
-                    with col2:
-                        st.metric("Correct", f"{row['Correct Answers']}/{row['Total Questions']}")
-                    with col3:
-                        st.metric("Submitted", row['Submitted At'])
-                    st.divider()
-        
-    else:
-        st.info("📭 No submissions yet. Students can complete the assessment to generate reports.")
-    
-    # Stop here - don't show student assessment
-    st.stop()
+    st.markdown("""
+        <div style='text-align: center; padding: 2rem; background: linear-gradient(135deg, rgba(107, 33, 168, 0.05) 0%, rgba(157, 78, 221, 0.05) 100%); border-radius: 8px; margin-top: 2rem;'>
+            <p style='color: #6B21A8; font-weight: 600; margin: 0;'>🔷 UE Platform - Employee Training</p>
+            <p style='color: #757575; font-size: 13px; margin: 0.5rem 0 0 0;'>SQL Mastery Program for Employee Certification</p>
+            <p style='color: #A78BFA; font-size: 11px; margin: 1rem 0 0 0;'>© 2026 UE Platform. All rights reserved.</p>
+        </div>
+    """, unsafe_allow_html=True)
