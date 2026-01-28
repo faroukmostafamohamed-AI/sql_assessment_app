@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import re
 import pandas as pd
 import os
@@ -169,7 +169,7 @@ QUESTIONS = [
         "table_info": {
             "employees": {
                 "columns": ["employeeid (INT, PK)", "firstname (VARCHAR)", "lastname (VARCHAR)", "birthdate (DATETIME)"],
-                "sample": "birthdate: '1966-01-27 00:00:00' → cast to DATE: '1966-01-27'"
+                "sample": "birthdate: '1966-01-27 00:00:00' ? cast to DATE: '1966-01-27'"
             }
         },
         "solution":"SELECT firstname, lastname, title, CAST(birthdate AS DATE) FROM employees ORDER BY birthdate"
@@ -182,7 +182,7 @@ QUESTIONS = [
         "table_info": {
             "employees": {
                 "columns": ["employeeid (INT, PK)", "firstname (VARCHAR)", "lastname (VARCHAR)"],
-                "sample": "firstname: 'Nancy', lastname: 'Davolio' → fullname: 'Nancy Davolio'"
+                "sample": "firstname: 'Nancy', lastname: 'Davolio' ? fullname: 'Nancy Davolio'"
             }
         },
         "solution":"SELECT firstname, lastname, firstname + ' ' + lastname AS fullname FROM employees"
@@ -195,7 +195,7 @@ QUESTIONS = [
         "table_info": {
             "orderdetails": {
                 "columns": ["orderid (INT, FK)", "productid (INT, FK)", "unitprice (DECIMAL)", "quantity (INT)", "discount (DECIMAL)"],
-                "sample": "orderid: 10248, unitprice: 10.00, quantity: 12 → totalprice: 120.00"
+                "sample": "orderid: 10248, unitprice: 10.00, quantity: 12 ? totalprice: 120.00"
             }
         },
         "solution":"SELECT orderid, productid, unitprice, quantity, unitprice * quantity AS totalprice FROM orderdetails ORDER BY orderid, productid"
@@ -260,7 +260,7 @@ QUESTIONS = [
         "table_info": {
             "products": {"columns": ["productid (INT, PK)", "productname (VARCHAR)", "supplierid (INT, FK)"]},
             "suppliers": {"columns": ["supplierid (INT, PK)", "companyname (VARCHAR)"]},
-            "relationship": "products.supplierid → suppliers.supplierid"
+            "relationship": "products.supplierid ? suppliers.supplierid"
         },
         "solution":"SELECT productid, productname, companyname FROM products INNER JOIN suppliers ON products.supplierid = suppliers.supplierid ORDER BY productid"
     },
@@ -272,7 +272,7 @@ QUESTIONS = [
         "table_info": {
             "orders": {"columns": ["orderid (INT, PK)", "orderdate (DATE)", "shipvia (INT, FK)"]},
             "shippers": {"columns": ["shipperid (INT, PK)", "companyname (VARCHAR)"]},
-            "relationship": "orders.shipvia → shippers.shipperid"
+            "relationship": "orders.shipvia ? shippers.shipperid"
         },
         "solution":"SELECT orderid, CAST(orderdate AS DATE) AS orderdate, companyname FROM orders INNER JOIN shippers ON orders.shipvia = shippers.shipperid WHERE orderid < 10300 ORDER BY orderid"
     },
@@ -284,7 +284,7 @@ QUESTIONS = [
         "table_info": {
             "products": {"columns": ["productid (INT, PK)", "categoryid (INT, FK)"]},
             "categories": {"columns": ["categoryid (INT, PK)", "categoryname (VARCHAR)"]},
-            "relationship": "products.categoryid → categories.categoryid"
+            "relationship": "products.categoryid ? categories.categoryid"
         },
         "solution":"SELECT categoryname, COUNT(*) AS totalproducts FROM products INNER JOIN categories ON categories.categoryid = products.categoryid GROUP BY categoryname ORDER BY totalproducts DESC"
     },
@@ -414,7 +414,7 @@ QUESTIONS = [
         "table_info": {
             "customers": {"columns": ["customerid (VARCHAR, PK)", "companyname (VARCHAR)"]},
             "orders": {"columns": ["orderid (INT, PK)", "customerid (VARCHAR, FK)"]},
-            "relationship": "customers.customerid ← orders.customerid (LEFT JOIN)"
+            "relationship": "customers.customerid ? orders.customerid (LEFT JOIN)"
         },
         "solution":"SELECT customers.customerid, orders.customerid FROM customers LEFT JOIN orders ON orders.customerid = customers.customerid WHERE orders.customerid IS NULL"
     },
@@ -426,7 +426,7 @@ QUESTIONS = [
         "table_info": {
             "customers": {"columns": ["customerid (VARCHAR, PK)", "companyname (VARCHAR)"]},
             "orders": {"columns": ["orderid (INT, PK)", "customerid (VARCHAR, FK)", "employeeid (INT)"]},
-            "relationship": "customers.customerid ← orders.customerid WHERE employeeid = 4"
+            "relationship": "customers.customerid ? orders.customerid WHERE employeeid = 4"
         },
         "solution":"SELECT customers.customerid, orders.customerid FROM customers LEFT JOIN orders ON orders.customerid = customers.customerid AND orders.employeeid = '4' WHERE orders.customerid IS NULL"
     },
@@ -540,11 +540,149 @@ if "feedback_message" not in st.session_state:
     st.session_state.feedback_message = ""
 if "user_sql_input" not in st.session_state:
     st.session_state.user_sql_input = ""
+if "admin_authenticated" not in st.session_state:
+    st.session_state.admin_authenticated = False
 
-st.title("🗄️ SQL Assessment ")
+# ==========================
+# Admin Mode Check - Show at Top
+# ==========================
+# Create a sidebar for admin access
+with st.sidebar:
+    st.markdown("---")
+    st.subheader("?? Admin Access")
+    
+    if not st.session_state.admin_authenticated:
+        admin_password = st.text_input("Enter Admin Password:", type="password", key="admin_password_sidebar")
+        if st.button("Login as Admin", key="admin_login_btn"):
+            if admin_password == "admin123":  # Change this to a secure password
+                st.session_state.admin_authenticated = True
+                st.success("? Admin access granted!")
+                st.rerun()
+            else:
+                st.error("? Incorrect password.")
+    else:
+        st.success("? Admin Mode Active")
+        if st.button("Logout Admin", key="admin_logout_btn"):
+            st.session_state.admin_authenticated = False
+            st.rerun()
 
-# Student Name and Email input (at the top for tracking) - MANDATORY
-st.markdown("**Student Information** (Required)")
+# If admin is authenticated, show admin dashboard at top
+if st.session_state.admin_authenticated:
+    st.set_page_config(page_title="SQL Assessment - Admin Mode", layout="wide")
+
+st.title("??? SQL Assessment ")
+
+# ==========================
+# Admin Dashboard Section (Always Available to Authenticated Admins)
+# ==========================
+if st.session_state.admin_authenticated:
+    st.warning("You are in ADMIN MODE - Viewing all student submissions")
+    st.divider()
+    st.subheader("?? Admin Dashboard - Student Submissions Report")
+    
+    # Create submissions folder if it doesn't exist
+    if not os.path.exists("submissions"):
+        os.makedirs("submissions")
+    
+    # Read all submission files
+    submission_files = [f for f in os.listdir("submissions") if f.endswith('.csv')]
+    
+    if submission_files:
+        st.info(f"Total submissions: {len(submission_files)}")
+        
+        # Load all submissions
+        all_submissions = []
+        for file in submission_files:
+            try:
+                df = pd.read_csv(f"submissions/{file}")
+                all_submissions.append(df)
+            except Exception as e:
+                st.warning(f"Error reading {file}: {e}")
+        
+        if all_submissions:
+            # Combine all submissions
+            combined_df = pd.concat(all_submissions, ignore_index=True)
+            
+            # Display submissions table
+            st.subheader("All Student Submissions")
+            st.dataframe(combined_df, use_container_width=True, hide_index=True)
+            
+            # Export options
+            st.subheader("?? Export Options")
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                # Export as CSV
+                csv_data = combined_df.to_csv(index=False)
+                st.download_button(
+                    label="?? Download as CSV",
+                    data=csv_data,
+                    file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+            
+            with col2:
+                # Export as Excel
+                try:
+                    import openpyxl
+                    excel_buffer = io.BytesIO()
+                    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                        combined_df.to_excel(writer, index=False, sheet_name='Submissions')
+                    excel_buffer.seek(0)
+                    st.download_button(
+                        label="?? Download as Excel",
+                        data=excel_buffer.getvalue(),
+                        file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                except ImportError:
+                    st.info("Install openpyxl: pip install openpyxl")
+            
+            with col3:
+                st.metric("Total Users", len(combined_df))
+            
+            # Summary statistics
+            st.subheader("?? Summary Statistics")
+            stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+            
+            with stats_col1:
+                st.metric("Total Submissions", len(combined_df))
+            
+            with stats_col2:
+                if 'Correct Answers' in combined_df.columns:
+                    avg_correct = combined_df['Correct Answers'].mean()
+                    st.metric("Avg Correct Answers", f"{avg_correct:.1f}")
+            
+            with stats_col3:
+                if 'Score (%)' in combined_df.columns:
+                    avg_score = combined_df['Score (%)'].mean()
+                    st.metric("Avg Score", f"{avg_score:.1f}%")
+            
+            with stats_col4:
+                st.metric("Unique Users", combined_df['Name'].nunique() if 'Name' in combined_df.columns else 'N/A')
+            
+            # Detailed view option
+            with st.expander("??? View Detailed Submissions"):
+                for idx, row in combined_df.iterrows():
+                    st.markdown(f"### {row['Name']} ({row['Email']})")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Score", f"{row['Score (%)']}%")
+                    with col2:
+                        st.metric("Correct", f"{row['Correct Answers']}/{row['Total Questions']}")
+                    with col3:
+                        st.metric("Submitted", row['Submitted At'])
+                    st.divider()
+        
+    else:
+        st.info("?? No submissions yet. Students can complete the assessment to generate reports.")
+    
+    # Stop here - don't show student assessment
+    st.stop()
+
+# ==========================
+# Student Assessment Section (Only if not in Admin Mode)
+# ==========================
 col_name, col_email = st.columns(2)
 with col_name:
     student_name = st.text_input("Your Name", key="student_name", placeholder="Enter your full name")
@@ -553,7 +691,7 @@ with col_email:
 
 # Validate mandatory fields
 if not student_name or not student_email:
-    st.warning("⚠️ Please enter both your name and email to begin the assessment.")
+    st.warning("?? Please enter both your name and email to begin the assessment.")
     st.stop()
 
 # Progress bar
@@ -565,7 +703,7 @@ q = QUESTIONS[st.session_state.current_q]
 st.markdown(f"**Question:** {q['question']}")
 
 # Display description and table information
-with st.expander("📋 Question Details & Schema"):
+with st.expander("?? Question Details & Schema"):
     st.markdown(f"**Description:** {q['description']}")
     st.markdown("**Tables Involved:**")
     for table_name, table_data in q['table_info'].items():
@@ -577,9 +715,9 @@ with st.expander("📋 Question Details & Schema"):
                 st.markdown("  **Sample Data:**")
                 # Parse and format sample data as table
                 sample_text = table_data['sample']
-                if ' → ' in sample_text:
+                if ' ? ' in sample_text:
                     # Handle transformations like casting
-                    parts = sample_text.split(' → ')
+                    parts = sample_text.split(' ? ')
                     col1, col2 = st.columns(2)
                     with col1:
                         st.markdown("**Input:**")
@@ -642,9 +780,9 @@ with col1:
             st.session_state.show_feedback = True
             st.session_state.feedback_correct = correct
             if correct:
-                st.session_state.feedback_message = "✅ Correct!"
+                st.session_state.feedback_message = "? Correct!"
             else:
-                st.session_state.feedback_message = "❌ Incorrect."
+                st.session_state.feedback_message = "? Incorrect."
 
 with col2:
     if st.session_state.current_q + 1 < len(QUESTIONS):
@@ -673,10 +811,10 @@ if st.session_state.show_feedback:
 if (st.session_state.current_q >= len(QUESTIONS) or 
     (len(st.session_state.answers) >= len(QUESTIONS) and st.session_state.current_q == len(QUESTIONS) - 1)):
     
-    st.success("🎉 You have completed all questions!")
+    st.success("?? You have completed all questions!")
     
     # Show summary
-    st.subheader("📊 Your Results Summary")
+    st.subheader("?? Your Results Summary")
     total = len(st.session_state.answers)
     correct_count = sum(a["is_correct"] for a in st.session_state.answers)
     score_percentage = (correct_count / total) * 100
@@ -709,7 +847,7 @@ if (st.session_state.current_q >= len(QUESTIONS) or
         submission_file = f"submissions/{student_email}_{submission_datetime.strftime('%Y%m%d_%H%M%S')}.csv"
         submission_df = pd.DataFrame([submission_data])
         submission_df.to_csv(submission_file, index=False)
-        st.success(f"✅ Your results have been saved! (Submitted: {submission_datetime.strftime('%Y-%m-%d %H:%M:%S')})")
+        st.success(f"? Your results have been saved! (Submitted: {submission_datetime.strftime('%Y-%m-%d %H:%M:%S')})")
     
     # Detailed results
     with st.expander("View Detailed Results"):
@@ -721,9 +859,9 @@ if (st.session_state.current_q >= len(QUESTIONS) or
                 st.markdown(f"- Correct Answer: `{ans['correct_answer']}`")
             with col2:
                 if ans['is_correct']:
-                    st.success("✅ Correct")
+                    st.success("? Correct")
                 else:
-                    st.error("❌ Incorrect")
+                    st.error("? Incorrect")
             st.divider()
     
     # Reset button
@@ -734,105 +872,111 @@ if (st.session_state.current_q >= len(QUESTIONS) or
         st.session_state.user_sql_input = ""
         st.rerun()
 
+
 # ==========================
-# Admin Section - View All Submissions (Password Protected)
+# Admin Dashboard Section (Always Available via Sidebar)
 # ==========================
-st.divider()
-st.subheader("� Admin Dashboard")
-
-# Admin password protection
-admin_password = "admin123"  # Change this to a secure password
-admin_session = st.session_state.get("admin_authenticated", False)
-
-if not admin_session:
-    st.warning("⚠️ This section is restricted to administrators only.")
-    entered_password = st.text_input("Enter Admin Password:", type="password", key="admin_password_input")
+if st.session_state.admin_authenticated:
+    st.warning("⚠️ You are in ADMIN MODE - Viewing all student submissions")
+    st.divider()
+    st.subheader("📊 Admin Dashboard - Student Submissions Report")
     
-    if st.button("Access Admin Dashboard"):
-        if entered_password == admin_password:
-            st.session_state.admin_authenticated = True
-            st.success("✅ Admin access granted!")
-            st.rerun()
-        else:
-            st.error("❌ Incorrect password. Access denied.")
-    st.stop()  # Stop execution if not authenticated
-
-# If authenticated, show admin dashboard
-st.success("✅ Admin Mode Active")
-
-# Create submissions folder if it doesn't exist
-if not os.path.exists("submissions"):
-    os.makedirs("submissions")
-
-# Read all submission files
-submission_files = [f for f in os.listdir("submissions") if f.endswith('.csv')]
-
-if submission_files:
-    st.subheader("📊 All Student Submissions")
-    st.info(f"Total submissions: {len(submission_files)}")
+    # Create submissions folder if it doesn't exist
+    if not os.path.exists("submissions"):
+        os.makedirs("submissions")
     
-    # Load all submissions
-    all_submissions = []
-    for file in submission_files:
-        try:
-            df = pd.read_csv(f"submissions/{file}")
-            all_submissions.append(df)
-        except Exception as e:
-            st.warning(f"Error reading {file}: {e}")
+    # Read all submission files
+    submission_files = [f for f in os.listdir("submissions") if f.endswith('.csv')]
     
-    if all_submissions:
-        # Combine all submissions
-        combined_df = pd.concat(all_submissions, ignore_index=True)
+    if submission_files:
+        st.info(f"✅ Total submissions found: {len(submission_files)}")
         
-        # Display submissions table
-        st.dataframe(combined_df, width='stretch', hide_index=True)
-        
-        # Export options
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            # Export as CSV
-            csv_data = combined_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download as CSV",
-                data=csv_data,
-                file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
-            )
-        
-        with col2:
-            # Export as Excel
+        # Load all submissions
+        all_submissions = []
+        for file in submission_files:
             try:
-                import openpyxl
-                excel_buffer = io.BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-                    combined_df.to_excel(writer, index=False, sheet_name='Submissions')
-                excel_buffer.seek(0)
+                df = pd.read_csv(f"submissions/{file}")
+                all_submissions.append(df)
+            except Exception as e:
+                st.warning(f"Error reading {file}: {e}")
+        
+        if all_submissions:
+            # Combine all submissions
+            combined_df = pd.concat(all_submissions, ignore_index=True)
+            
+            # Display submissions table
+            st.subheader("📋 All Student Submissions")
+            st.dataframe(combined_df, use_container_width=True, hide_index=True)
+            
+            # Export options
+            st.subheader("📥 Export Options")
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                # Export as CSV
+                csv_data = combined_df.to_csv(index=False)
                 st.download_button(
-                    label="📥 Download as Excel",
-                    data=excel_buffer.getvalue(),
-                    file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    label="📥 Download as CSV",
+                    data=csv_data,
+                    file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
                 )
-            except ImportError:
-                st.info("Install openpyxl to export as Excel: pip install openpyxl")
+            
+            with col2:
+                # Export as Excel
+                try:
+                    import openpyxl
+                    excel_buffer = io.BytesIO()
+                    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                        combined_df.to_excel(writer, index=False, sheet_name='Submissions')
+                    excel_buffer.seek(0)
+                    st.download_button(
+                        label="📥 Download as Excel",
+                        data=excel_buffer.getvalue(),
+                        file_name=f"sql_assessment_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                except ImportError:
+                    st.info("⚠️ Install openpyxl: pip install openpyxl")
+            
+            with col3:
+                st.metric("Total Users", len(combined_df))
+            
+            # Summary statistics
+            st.subheader("📈 Summary Statistics")
+            stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+            
+            with stats_col1:
+                st.metric("Total Submissions", len(combined_df))
+            
+            with stats_col2:
+                if 'Correct Answers' in combined_df.columns:
+                    avg_correct = combined_df['Correct Answers'].mean()
+                    st.metric("Avg Correct", f"{avg_correct:.1f}")
+            
+            with stats_col3:
+                if 'Score (%)' in combined_df.columns:
+                    avg_score = combined_df['Score (%)'].mean()
+                    st.metric("Avg Score", f"{avg_score:.1f}%")
+            
+            with stats_col4:
+                st.metric("Unique Users", combined_df['Name'].nunique() if 'Name' in combined_df.columns else 'N/A')
+            
+            # Detailed view option
+            with st.expander("👁️ View Detailed Submissions"):
+                for idx, row in combined_df.iterrows():
+                    st.markdown(f"### {row['Name']} ({row['Email']})")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Score", f"{row['Score (%)']}%")
+                    with col2:
+                        st.metric("Correct", f"{row['Correct Answers']}/{row['Total Questions']}")
+                    with col3:
+                        st.metric("Submitted", row['Submitted At'])
+                    st.divider()
         
-        with col3:
-            st.metric("Total Users", len(combined_df))
-        
-        # Summary statistics
-        st.subheader("📈 Summary Statistics")
-        stats_col1, stats_col2, stats_col3 = st.columns(3)
-        
-        with stats_col1:
-            st.metric("Total Submissions", len(combined_df))
-        
-        with stats_col2:
-            if 'Submitted At' in combined_df.columns:
-                st.metric("Date Range", f"{combined_df['Submitted At'].min()} to {combined_df['Submitted At'].max()}")
-        
-        with stats_col3:
-            st.metric("Unique Users", combined_df['Name'].nunique() if 'Name' in combined_df.columns else 'N/A')
-        
-else:
-    st.info("No submissions yet. Students can complete the assessment to generate reports.")
+    else:
+        st.info("📭 No submissions yet. Students can complete the assessment to generate reports.")
+    
+    # Stop here - don't show student assessment
+    st.stop()
